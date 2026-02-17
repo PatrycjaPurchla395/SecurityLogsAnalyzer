@@ -1,165 +1,173 @@
 # Security Log Analyzer
 
-Zaawansowany analizator logów bezpieczeństwa z funkcją korelacji zdarzeń z wielu źródeł.
+Advanced security log analyzer with the function of correlating events from multiple sources.
 
-## Funkcjonalności
 
-### 1. Parsowanie logów
-- **Webserver logs** (Apache/Nginx format) - automatyczne wykrywanie ataków web
-- **Auth logs** (syslog format) - wykrywanie prób włamania SSH i sudo
-- Automatyczne wykrywanie roku z logów webserver dla synchronizacji z auth logs
-- Obsługa dużych plików poprzez streaming
+>>>> Link to prompt history: https://chatgpt.com/share/6994dc70-1d9c-8013-a04a-f7c13044a1b8 <<<<
 
-### 2. Wykrywanie zagrożeń
-- **SSH Brute Force** - wielokrotne nieudane próby logowania SSH
-- **Web Login Brute Force** - wielokrotne nieudane próby logowania HTTP (401)
-- **Web Attack Attempts** - wykrywanie:
-  - Path traversal (`../`)
-  - SQL Injection (`UNION`, `DROP`)
-  - Próby dostępu do paneli administracyjnych (`/admin`, `/phpmyadmin`)
-  - Próby dostępu do wrażliwych plików (`.env`, `config.php`)
+>>>> Here's a link to the main prompt history. It's not the whole story, though I also worked on my own and partly with another tool, Amazon Q to fix regex in rules and generate readMe file. But that's the core. <<<<
 
-### 3. Korelacja zdarzeń
-Program koreluje zdarzenia z różnych źródeł na podstawie:
-- **IP address** - ten sam adres IP
-- **Timestamp** - ta sama sekunda wystąpienia zdarzenia
 
-Korelacja pozwala wykryć **skoordynowane ataki**, gdzie atakujący jednocześnie próbuje:
-- Włamać się przez SSH
-- Atakować aplikację webową
-- Skanować system
 
-### 4. Raport
-Raport JSON zawiera:
-- **Summary** - podsumowanie z liczbą znalezionych zagrożeń i korelacji
-- **Threat Analysis** - analiza zagrożeń z poziomami CRITICAL/HIGH i rekomendacjami
-- **Findings** - szczegółowa lista wszystkich wykrytych zagrożeń
-- **Correlations** - lista skorelowanych zdarzeń z różnych źródeł
 
-## Użycie
+## Features
+
+### 1. Log Parsing
+- **Webserver logs** (Apache/Nginx format) - automatic detection of web attacks
+- **Auth logs** (syslog format) - detection of SSH and sudo intrusion attempts
+- Automatic year detection from webserver logs for synchronization with auth logs
+- Support for large files via streaming
+
+### 2. Threat Detection
+- **SSH Brute Force** - multiple failed SSH login attempts
+- **Web Login Brute Force** - multiple failed HTTP login attempts (401)
+- **Web Attack Attempts** - detection of:
+- Path traversal (`../`)
+- SQL injection (`UNION`, `DROP`)
+- Attempts to access administration panels (`/admin`, `/phpmyadmin`)
+- Access attempts to sensitive files (`.env`, `config.php`)
+
+### 3. Event Correlation
+The program correlates events from different sources based on:
+- **IP address** - the same IP address
+- **Timestamp** - the same second of the event's occurrence
+
+Correlation allows you to detect **coordinated attacks**, where the attacker simultaneously attempts to:
+- Break in via SSH
+- Attack a web application
+- Scan the system
+
+### 4. Report
+The JSON report contains:
+- **Summary** - a summary with the number of threats and correlations found
+- **Threat Analysis** - a threat analysis with CRITICAL/HIGH levels and recommendations
+- **Findings** - a detailed list of all detected threats
+- **Correlations** - a list of correlated events from different sources
+
+## Usage
 
 ```bash
 python main.py <log_file1> <log_file2> ... [--output report.json]
 ```
 
-### Przykłady
+### Examples
 
 ```bash
-# Analiza logów webserver i auth
+# Analyzing webserver and auth logs
 python main.py sample_logs/webserver.log sample_logs/auth.log
 
-# Własna nazwa raportu
+# Custom report name
 python main.py sample_logs/webserver.log sample_logs/auth.log --output security_report.json
 
-# Analiza wielu plików
+# Analyzing multiple files
 python main.py logs/web1.log logs/web2.log logs/auth.log
 ```
 
-## Struktura projektu
+## Project Structure
 
 ```
 securityAnalyser/
-├── main.py                          # Punkt wejścia
+├── main.py # Entry point
 ├── models/
-│   └── events.py                    # Model Event
+│ └── events.py # Event model
 ├── parsers/
-│   ├── base_parser.py               # Abstrakcyjna klasa parsera
-│   ├── auth_parser.py               # Parser dla auth logs
-│   └── webservice_parser.py         # Parser dla webserver logs
+│ ├── base_parser.py # Abstract parser class
+│ ├── auth_parser.py # Parser for auth logs
+│ └── webservice_parser.py # Parser for webserver logs
 ├── detection/
-│   ├── event_stream.py              # Streaming zdarzeń z plików
-│   ├── detection_engine.py          # Wykrywanie zagrożeń
-│   ├── corelation.py                # Korelacja zdarzeń
-│   ├── raport_generator.py          # Generowanie raportu
-│   └── security_log_analyser.py     # Główna logika analizy
+│ ├── event_stream.py # Streaming events from files
+│ ├── detection_engine.py # Threat detection
+│ ├── corelation.py # Event correlation
+│ ├── raport_generator.py # Report generation
+│ └── security_log_analyser.py # Main analysis logic
 └── sample_logs/
-    ├── webserver.log                # Przykładowe logi webserver
-    └── auth.log                     # Przykładowe logi auth
+├── webserver.log # Sample webserver logs
+└── auth.log # Sample auth logs
 ```
 
-## Konfiguracja
+## Configuration
 
-Domyślna konfiguracja w `SecurityLogAnalyzer`:
+Default configuration in `SecurityLogAnalyzer`:
 
 ```python
 DEFAULT_CONFIG = {
-    "failed_login_threshold": 3  # Minimalna liczba nieudanych prób logowania
+"failed_login_threshold": 3 # Minimum number of failed login attempts
 }
 ```
 
-## Przykładowy raport
+## Sample report
 
 ```json
 {
-  "summary": {
-    "total_findings": 10,
-    "total_correlations": 7,
-    "critical_ips": ["10.0.0.50", "203.0.113.5"]
-  },
-  "threat_analysis": [
-    {
-      "ip": "10.0.0.50",
-      "severity": "CRITICAL",
-      "description": "IP 10.0.0.50 shows coordinated attack pattern across 2 services (auth, web) with 4 correlated suspicious events",
-      "recommendation": "Block IP 10.0.0.50 immediately and investigate all access from this source"
-    }
-  ],
-  "findings": [...],
-  "correlations": [
-    {
-      "ip": "10.0.0.50",
-      "timestamp": "2025-07-03 10:00:03",
-      "sources": ["auth", "web"],
-      "events": [
-        {
-          "source": "auth",
-          "action": "Failed password for admin from 10.0.0.50 port 52341 ssh2"
-        },
-        {
-          "source": "web",
-          "action": "POST /login"
-        }
-      ],
-      "threat": "Coordinated attack: Same IP (10.0.0.50) performing suspicious activities across multiple services (auth, web) at the same time"
-    }
-  ]
+"summary": {
+"total_findings": 10,
+"total_correlations": 7,
+"critical_ips": ["10.0.0.50", "203.0.113.5"]
+},
+"threat_analysis": [
+{
+"ip": "10.0.0.50", 
+"severity": "CRITICAL", 
+"description": "IP 10.0.0.50 shows coordinated attack pattern across 2 services (auth, web) with 4 correlated suspicious events", 
+"recommendation": "Block IP 10.0.0.50 immediately and investigate all access from this source" 
+} 
+], 
+"findings": [...], 
+"correlations": [ 
+{ 
+"ip": "10.0.0.50", 
+"timestamp": "2025-07-03 10:00:03", 
+"sources": ["auth", "web"], 
+"events": [ 
+{ 
+"source": "auth", 
+"action": "Failed password for admin from 10.0.0.50 port 52341 ssh2" 
+},
+{
+"source": "web",
+"action": "POST /login"
+}
+],
+"threat": "Coordinated attack: Same IP (10.0.0.50) performing suspicious activities across multiple services (auth, web) at the same time"
+}
+]
 }
 ```
 
-## Optymalizacja
+## Optimization
 
-Program jest zoptymalizowany pod kątem dużych plików:
-- **Streaming** - pliki są czytane linia po linii, nie ładowane do pamięci
-- **Generator pattern** - zdarzenia są przetwarzane w locie
-- **Lazy evaluation** - parsowanie tylko gdy potrzebne
+The program is optimized for large files:
+- **Streaming** - files are read line by line, not loaded into memory
+- **Pattern Generator** - events are processed on the fly
+- **Lazy evaluation** - parsing only when needed
 
-## Rozszerzanie
+## Extending
 
-### Dodanie nowego parsera
+### Adding a new parser
 
-1. Utwórz klasę dziedziczącą po `LogParser`
-2. Zaimplementuj metodę `parse(line: str) -> Optional[Event]`
-3. Zarejestruj parser w `ParserRegistry`
+1. Create a class that inherits from `LogParser`
+2. Implement the `parse(line: str) -> Optional[Event]` method
+3. Register the parser in the `ParserRegistry`
 
 ```python
 class CustomLogParser(LogParser):
-    def parse(self, line: str) -> Optional[Event]:
-        # Twoja logika parsowania
-        return Event(...)
+def parse(self, line: str) -> Optional[Event]:
+# Your parsing logic
+return Event(...)
 ```
 
-### Dodanie nowej reguły wykrywania
+### Adding a new detection rule
 
-Dodaj logikę w `DetectionEngine.process()` lub `DetectionEngine.finalize()`:
-
+Add logic in `DetectionEngine.process()` or `DetectionEngine.finalize()`:
 ```python
 def process(self, event: Event):
-    # Twoja reguła wykrywania
-    if event.source == "custom" and "suspicious" in event.action:
-        self.suspicious_events.append(event)
+# Your detection rule
+if event.source == "custom" and "suspicious" in event.action:
+self.suspicious_events.append(event)
 ```
 
-## Wymagania
+## Requirements
 
 - Python 3.7+
-- Brak zewnętrznych zależności (tylko standardowa biblioteka)
+- No external dependencies (standard library only)
+
